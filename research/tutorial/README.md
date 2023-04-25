@@ -79,100 +79,109 @@ For reference, we would use YouTube tutorials:
 
 ## Docker
 
-https://docker-curriculum.com/
+### What is Docker?
 
-Docker is a platform for developing, shipping, and running applications in containers. Containers are lightweight, portable, and self-contained environments that can run an application and all its dependencies, allowing developers to package their applications into a single container that can be deployed to any environment.
-
-Docker allows developers to create, manage, and deploy containers easily, regardless of the underlying infrastructure. It abstracts away the complexity of infrastructure management and provides a consistent environment for developers and operations teams, enabling faster and more reliable application delivery.
+Docker is a platform for developing, shipping, and running applications in containers. It allows developers to **create, manage, and deploy containers** easily, regardless of the underlying infrastructure.
 
 Docker has become a popular tool in DevOps and cloud computing, as it allows developers to build and test applications in a containerized environment, and deploy them to any cloud platform or on-premise infrastructure with ease. It also enables organizations to scale their applications more efficiently, as containers can be easily replicated and deployed across multiple environments.
 
-Containerization is the process of packaging an application and its dependencies into a single, self-contained unit called a container. Containers provide a way to isolate and run applications with all their dependencies in a consistent and predictable environment.
+### Containers
 
-In the context of Docker, containerization involves using Docker containers to package an application and all its dependencies into a single container image. A Docker container image is a lightweight, portable, and self-sufficient package that contains everything needed to run an application, including the code, runtime, system tools, libraries, and settings.
+Containers are **lightweight**, **portable**, and **self-contained environments** that can run an application and all its dependencies, allowing developers to package their applications into a single container that can be deployed to any environment. Containers provide a way to isolate and run applications with all their dependencies in a consistent and predictable environment.
 
-Docker containers are based on the concept of operating system virtualization, which allows multiple containers to run on the same host operating system while remaining isolated from each other. Each Docker container runs as a separate process, with its own file system, network interface, and resources, such as CPU and memory.
+#### Containerization
+
+Containerization is the process of packaging an **application and its dependencies** into a single, **self-contained** unit called a container.
+
+By packaging the applications into containers:
+
+- Applications can be abstracted from the environment in which they actually run
+- Application's environment and host's environment are **decoupled**
+- A **predictable environment**, that is **isolated** from the rest of the applications and can be run anywhere, is created
+
+In the context of Docker, containerization involves using Docker containers to package an application and all its dependencies into a single **container image**. A Docker container image is a lightweight, portable, and self-sufficient package that contains everything needed to run an application, including the **code, runtime, system tools, libraries, and settings**.
+
+#### What are the benefits?
+
+Docker containers are based on the concept of operating system virtualization, which allows multiple containers to run on the same host operating system while remaining isolated from each other. Each Docker container runs as a **separate process**, with its own **file system, network interface, and resources, such as CPU and memory**.
 
 The benefits of containerization with Docker include:
 
-Portability: Docker containers can be run on any platform that supports Docker, making it easy to move applications between environments.
-Consistency: Docker containers provide a consistent environment for applications to run, regardless of the underlying infrastructure.
-Efficiency: Docker containers are lightweight and require minimal resources, allowing for efficient use of infrastructure.
-Scalability: Docker containers can be easily replicated and deployed across multiple environments, enabling organizations to scale their applications more efficiently.
-Overall, containerization with Docker provides a more efficient and reliable way to develop, deploy, and manage applications.
+- **Portability**: Docker containers can be run on any platform that supports Docker, making it easy to move applications between environments.
+- **Consistency**: Docker containers provide a consistent environment for applications to run, regardless of the underlying infrastructure.
+- **Efficiency**: Docker containers are lightweight and require minimal resources, allowing for efficient use of infrastructure.
+- **Scalability**: Docker containers can be easily replicated and deployed across multiple environments, enabling organizations to scale their applications more efficiently.
 
-Yes, Docker is still very commonly used today, and its usage continues to grow. Docker has become a popular tool in DevOps and cloud computing, and it is widely used by organizations of all sizes and across a range of industries.
+#### Where is it used?
+
+Overall, containerization with Docker provides a more efficient and reliable way to develop, deploy, and manage applications.
 
 Docker is commonly used in cloud-native applications, microservices architectures, and container orchestration platforms like Kubernetes. It is also used in DevOps workflows, where developers use Docker containers to build, test, and deploy applications in a consistent and repeatable way.
 
-Some of the popular use cases for Docker include:
-
-Application development and testing: Docker containers provide a lightweight and portable way to package and test applications, enabling developers to quickly iterate and deploy their code.
-Cloud computing and serverless computing: Docker containers can be used to run applications in cloud platforms like Amazon Web Services (AWS), Microsoft Azure, and Google Cloud Platform (GCP), as well as in serverless computing environments like AWS Lambda and Google Cloud Functions.
-Continuous integration and continuous delivery (CI/CD): Docker containers can be used in CI/CD workflows to automate the build, test, and deployment of applications, enabling faster and more reliable software delivery.
-Microservices architectures: Docker containers are often used in microservices architectures, where applications are broken down into smaller, independent services that can be deployed and scaled independently.
-Overall, Docker is widely used today, and its popularity is expected to continue to grow as more organizations adopt cloud-native architectures and DevOps practices.
+Due to these benefits, containers (& Docker) have seen widespread adoption. Companies like Google, Facebook, Netflix and Salesforce leverage containers to make large engineering teams more productive and to improve utilization of compute resources.
 
 ## Kubernetes
 
-Kubernetes is an open-source container orchestration platform that automates the deployment, scaling, and management of containerized applications. Kubernetes was originally developed by Google, and it has since become one of the most popular tools in cloud computing and DevOps.
+### What is Kubernetes?
 
-Kubernetes is often used in conjunction with Docker, as Docker provides the containerization technology that Kubernetes uses to run applications. Kubernetes can also work with other containerization tools like containerd, CRI-O, and rkt.
+Kubernetes is an open-source **container orchestration platform** that automates the deployment, scaling, and management of containerized applications. Kubernetes was originally developed by Google, and it has since become one of the most popular tools in cloud computing and DevOps.
+
+Kubernetes is often used in conjunction with Docker, as **Docker provides the containerization technology that Kubernetes uses to run applications**. Kubernetes can also work with other containerization tools like containerd, CRI-O, and rkt.
 
 Kubernetes is commonly used in cloud-native applications and microservices architectures, as it provides a way to manage and scale complex containerized applications. It is widely used in cloud platforms like AWS, Microsoft Azure, and Google Cloud Platform, as well as in on-premise data centers.
 
+### Benefits
+
 Some of the benefits of using Kubernetes include:
 
-Scalability: Kubernetes enables organizations to scale their applications up or down based on demand, making it easy to handle traffic spikes and other fluctuations.
-Resilience: Kubernetes provides features like self-healing and automatic failover, ensuring that applications remain available even in the face of hardware or software failures.
-Portability: Kubernetes provides a consistent way to deploy and manage applications across different environments, making it easy to move applications between cloud platforms and on-premise infrastructure.
-Automation: Kubernetes automates many of the tasks involved in managing containerized applications, reducing the need for manual intervention and minimizing the risk of human error.
-However, there are also some challenges associated with using Kubernetes. Some of the potential drawbacks include:
+- **Scalability**: Kubernetes enables organizations to scale their applications up or down based on demand, making it easy to handle traffic spikes and other fluctuations.
+- **Resilience**: Kubernetes provides features like self-healing and automatic failover, ensuring that applications remain available even in the face of hardware or software failures.
+- **Portability**: Kubernetes provides a consistent way to deploy and manage applications across different environments, making it easy to move applications between cloud platforms and on-premise infrastructure.
+- **Automation**: Kubernetes automates many of the tasks involved in managing containerized applications, reducing the need for manual intervention and minimizing the risk of human error.
 
-Complexity: Kubernetes can be complex to set up and manage, especially for organizations that are new to containerization and cloud computing.
-Learning curve: Kubernetes has a steep learning curve, and it can take time for developers and operations teams to become proficient in its use.
-Resource requirements: Kubernetes requires significant resources to run, both in terms of hardware and personnel. Organizations need to have dedicated teams and infrastructure in place to manage and maintain Kubernetes clusters.
+### Challenges
+
+Some of the potential drawbacks include:
+
+- **Complexity**: Kubernetes can be complex to set up and manage, especially for organizations that are new to containerization and cloud computing.
+- **Learning curve**: Kubernetes has a steep learning curve, and it can take time for developers and operations teams to become proficient in its use.
+- **Resource requirements**: Kubernetes requires significant resources to run, both in terms of hardware and personnel. Organizations need to have dedicated teams and infrastructure in place to manage and maintain Kubernetes clusters.
+
 Overall, Kubernetes is a powerful tool for managing containerized applications, and it is widely used in cloud computing and DevOps. However, organizations need to carefully consider the benefits and drawbacks of using Kubernetes before adopting it in their workflows.
-
-When managing Kubernetes infrastructure and developing apps for deployment on Kubernetes, there are several common rules and best practices that can help ensure the reliability, security, and efficiency of the system. Some of these include:
-
-Use version control: Store your Kubernetes configuration files and application code in version control to enable reproducible builds and deployments.
-
-Follow the principle of least privilege: Limit access to Kubernetes resources by assigning appropriate roles and permissions to users and service accounts.
-
-Use namespaces: Use namespaces to isolate workloads and prevent conflicts between applications and services.
-
-Use labels and annotations: Use labels and annotations to identify and categorize Kubernetes objects, making it easier to manage and troubleshoot them.
-
-Use container images from trusted sources: Use container images from trusted sources, and regularly update them to ensure that they are free from vulnerabilities.
-
-Use resource limits: Use resource limits to prevent individual containers from consuming excessive CPU and memory resources, which can affect the performance of other containers on the same node.
-
-Use liveness and readiness probes: Use liveness and readiness probes to ensure that containers are running correctly and are ready to receive traffic.
-
-Use rolling updates: Use rolling updates to deploy new versions of applications with minimal downtime and disruption to users.
-
-Monitor and log Kubernetes objects: Monitor and log Kubernetes objects to detect and troubleshoot issues, and to identify opportunities for optimization.
-
-Regularly audit and review your system: Regularly audit and review your Kubernetes infrastructure and applications to identify security vulnerabilities, performance issues, and other areas for improvement.
-
-Overall, following these rules and best practices can help ensure the stability and reliability of your Kubernetes infrastructure and applications, and help you to better manage and troubleshoot issues when they arise.
 
 ## Kind (Kubernetes in Docker)
 
-Kind (Kubernetes in Docker) is a tool for running local Kubernetes clusters using Docker container nodes. It allows users to easily create, manage, and test Kubernetes clusters on their local machines or in CI/CD pipelines.
+Kind (Kubernetes in Docker) is a tool for running _local Kubernetes clusters using Docker container nodes_. It allows users to **easily create, manage, and test Kubernetes clusters on their local machines** or in CI/CD pipelines.
 
 A Kind cluster runs on a user's machine and can be used for a variety of purposes, such as:
 
-Development and testing: Developers can use Kind to create a local Kubernetes environment to test and iterate on applications before deploying them to a production cluster.
+- Development and testing: Developers can use Kind to create a local Kubernetes environment to test and iterate on applications before deploying them to a production cluster.
+- Continuous integration and deployment: CI/CD pipelines can use Kind to run integration tests against a Kubernetes cluster to verify that the application works correctly before deploying it to production.
+- Education and training: Kind can be used to create a local Kubernetes environment for educational and training purposes, allowing users to learn and experiment with Kubernetes without the need for cloud infrastructure.
 
-Continuous integration and deployment: CI/CD pipelines can use Kind to run integration tests against a Kubernetes cluster to verify that the application works correctly before deploying it to production.
+Kind provides a **lightweight and portable** way to create Kubernetes clusters, making it **easier for developers to experiment** with and test their applications **locally**. It can also be used in conjunction with other tools, such as kubectl and Helm, to streamline the development and deployment process.
 
-Education and training: Kind can be used to create a local Kubernetes environment for educational and training purposes, allowing users to learn and experiment with Kubernetes without the need for cloud infrastructure.
+## Prerequisites
 
-Kind provides a lightweight and portable way to create Kubernetes clusters, making it easier for developers to experiment with and test their applications locally. It can also be used in conjunction with other tools, such as kubectl and Helm, to streamline the development and deployment process.
+The getting started guide on Docker has detailed instructions for setting up Docker on [Mac](https://docs.docker.com/desktop/install/mac-install/), [Linux](https://docs.docker.com/engine/install/ubuntu/) and [Windows](https://docs.docker.com/desktop/install/windows-install/).
+
+Once you are done installing Docker, test your Docker installation by running the following:
+
+```bash
+$ docker run hello-world
+
+Hello from Docker.
+This message shows that your installation appears to be working correctly.
+...
+```
 
 ## Containerizing an application
+
+### Downloading the application code
+
+In this section we will containerize a [web application](https://github.com/CCBDA-UPC/Assignments-2023/blob/master/Lab05.md#task-51-download-the-code-for-the-web-app) that we have already used in Lab5. Go ahead and follow the instructions given on the linked page to download a zip file that contains the application code.
+
+### How to containerize an application?
 
 Containerizing an application typically involves the following steps:
 
@@ -192,10 +201,11 @@ Deploy the containerized application: Finally, deploy the containerized applicat
 
 Overall, containerizing an application involves creating a Docker image that contains all the necessary dependencies and configurations to run the application inside a container, and then running the container in a production environment.
 
-# How to run Kind
+---
 
 
-# How to deploy application on Kind cluster
+## How to run Kind
 
-# How to do deploy an application to AWS EKS
+## How to deploy application on Kind cluster
 
+## How to do deploy an application to AWS EKS
