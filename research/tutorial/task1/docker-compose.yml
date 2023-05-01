@@ -1,0 +1,78 @@
+version: '3.8'
+
+# Services that compose our application
+services:
+  # eb-signup application service
+  eb-signup:
+    networks: 
+      - eb-signup-network
+    # Exposed ports
+    ports:
+      - "8002:8000"
+    container_name: eb-signup
+    # Database has to be first to start
+    depends_on:
+      - eb-signup-db
+    # How to create an image
+    build:
+      # Application root folder
+      context: ./eb-signup
+      # Dockerfile name
+      dockerfile: Dockerfile
+    environment:
+      - DEBUG
+      - STARTUP_SIGNUP_TABLE
+      - AWS_REGION
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_SESSION_TOKEN
+      - EB_SIGNUP_ENVIRONMENT
+      - DYNAMO_ENDPOINT_URL=http://eb-signup-db:8000
+
+  # DynamoDB database service
+  eb-signup-db:
+    # Which image to use
+    image: 'amazon/dynamodb-local'
+    networks: 
+      - eb-signup-network
+    # Exposed ports
+    ports:
+      - "8001:8000"
+    container_name: eb-signup-db
+    # Append arguments to the entrypoint
+    command: -jar DynamoDBLocal.jar -sharedDb
+
+  # Python development container service
+  dev:
+    networks: 
+      - eb-signup-network
+    # Exposed ports
+    ports:
+      - "8000:8000"
+    container_name: eb-signup-dev
+    # Database has to be first to start
+    depends_on:
+      - eb-signup-db
+    image: python:3.11-slim-bullseye
+    working_dir: /work
+    entrypoint: /bin/sh
+    stdin_open: true # docker run -i
+    tty: true # docker run -t
+    volumes:
+      - ./eb-signup:/work
+    environment:
+      - DEBUG
+      - STARTUP_SIGNUP_TABLE
+      - AWS_REGION
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_SESSION_TOKEN
+      - EB_SIGNUP_ENVIRONMENT
+      - DYNAMO_ENDPOINT_URL=http://eb-signup-db:8000
+
+# Network definition for our services
+networks:
+  eb-signup-network:
+    name: eb-signup-network
+    driver: bridge
+  

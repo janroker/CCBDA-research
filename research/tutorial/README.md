@@ -60,7 +60,7 @@ Docker Compose is a tool that allows you to define and run **multi-container Doc
 
 The main purpose of Docker Compose is to simplify the process of managing multi-container Docker applications. With Docker Compose, you can define your application as a **set of services**, each running in its own container, and **configure how these services interact** with each other.
 
-A **Docker Compose file** is a YAML file that defines the configuration of the services that make up your application. It includes information such as the **image** to use for each service, the **ports to expose**, and the **environment variables** to set. You can also define **network connections between containers**, **mount volumes for persistent data**, and set up **dependencies between services**.
+A **Docker Compose file** is a YAML file that defines the configuration of the services that make up your application. It includes information such as **image** to use for each service, **ports to expose**, and **environment variables** to set. You can also define **network connections between containers**, **mount volumes for persistent data**, and set up **dependencies between services**.
 
 Docker Compose is particularly useful for developing and testing complex applications, as it allows you to define and run the entire application stack on your local machine. This makes it easier to test changes and debug issues in a local environment that closely mirrors the production environment.
 
@@ -235,7 +235,7 @@ You can execute `exit` command and exit the container.
 
 if we now run the `docker ps` command on the host machine, we will see that there are no containers running.
 
-### Task 1.2 - Modify the code
+### Task 1.2 - Developing inside container
 
 We will now download a [web application](https://github.com/CCBDA-UPC/Assignments-2023/blob/master/Lab05.md#task-51-download-the-code-for-the-web-app) that we have already used in Lab5. Go ahead and follow the instructions given on the linked page to download a zip file that contains the application code.
 
@@ -245,7 +245,42 @@ That folder should now look like this:
 
 ![eb-signup folder](./images/task1_2.png)
 
-#### Changes
+#### Using vscode to develop inside a container
+
+In this section we will see how to use vscode and Docker container to develop inside a container without the need to install dependencies on the host machine.
+
+We need to install the `Remote Development` extension pack for vscode. Open the `Extensions` menu (4th option in the sidebar) and install it.
+
+![vscode extension](./images/task1_3.png)
+
+Open a terminal window, position yourself inside the `research/tutorial/task1` folder and execute the following command:
+
+```bash
+docker run -dt --network="host" -v ./eb-signup:/work -w /work python:3.11-slim-bullseye /bin/sh
+```
+
+Note: We have also used `-d` option so that our container is started in detached mode.
+
+Now that we have our development container running, we will connect to it by using our new extension pack. This container already contains all binaries that are necessary for python development, such as pip, python 3.11, etc. If for some reason we needed another version of python, we could have used a different Docker image. 
+
+How to connect to the container:
+
+![Docker menu](images/task1_4.png)
+
+1. Open the Docker menu by clicking on the Docker icon in the sidebar.
+2. In the Containers menu, find a container which was created from the python:3.11-slim-bullseye image. It should be the one with a green play button icon. The icon indicated that the container is running.
+3. Right click on the container in the menu and pick `Attach Visual Studio Code` option.
+4. A new window was opened which is attached to the container. Now click on the first option in the sidebar and choose `Open Folder`.
+5. Open the `/work` folder that contains our code. Please note that we have used bind mount option for this folder and all the changes made will be reflected on the hosts file system.
+6. Open the Extensions menu and install `Python Extension Pack`. This is necessary because we are now in a different environment which does not have these extensions installed - container's environment. That software is needed for code completion, Intellisense and other IDE development features to work.
+7. Open a new terminal inside a vscode (container), by clicking on the Terminal->New Terminal option of the menu on the top left corner.
+8. Install all the necessary dependencies by executing the following `pip install -r requirements.txt`
+
+![Open work folder](images/task1_5.png)
+
+We are now ready to modify the code, debug and test our modifications.
+
+#### Modify the code
 
 Before containerizing the application, we will modify the code because we want to be able to test the application without having to create a new dynamodb table on the AWS academy
 
@@ -343,13 +378,13 @@ All we changed here is replaced a call to boto3 to obtain a 'dynamodb' resource 
 
 First, we need to get our local DynamoDB instance up and running. For this, we will use a DynamoDB Docker [image](https://hub.docker.com/r/amazon/dynamodb-local/). You can find more info on the provided link.
 
-Open a terminal and execute the following command that will start our local DynamoDB instance:
+Open a terminal on the host and execute the following command that will start our local DynamoDB instance:
 
 ```bash
-docker run --rm -p 8001:8000 amazon/dynamodb-local -jar DynamoDBLocal.jar -sharedDb
+docker run --rm -d -p 8001:8000 amazon/dynamodb-local -jar DynamoDBLocal.jar -sharedDb
 ```
 
-Open a new terminal and use a AWS CLI to create a `gsg-signup-table`:
+Use a AWS CLI to create a `gsg-signup-table`:
 
 ```bash
 aws dynamodb create-table --endpoint-url http://localhost:8001 --region "us-east-1" \
@@ -363,7 +398,7 @@ aws dynamodb create-table --endpoint-url http://localhost:8001 --region "us-east
     --table-class STANDARD
 ```
 
-We are now ready to start our application. As we already know, our application is dependent on a few environment variables which we will set with the following commands before executing a command that will get our application up and running:
+We are now ready to start our application. As we already know, our application is dependent on a few environment variables which we will set with the following commands before executing a command that will get our application up and running. Execute the follwoing in the **vscode window's** terminal that is attached to the container in which we are developing:
 
 ```bash
 export DEBUG=True
@@ -375,8 +410,10 @@ export AWS_SESSION_TOKEN=random
 export EB_SIGNUP_ENVIRONMENT=dev
 export DYNAMO_ENDPOINT_URL=http://localhost:8001
 
-python manage.py runserver
+python manage.py runserver 0.0.0.0:8000
 ```
+
+**Note**: With `0.0.0.0:8000` we specify that the server must listen on all interfaces because we will be accessing it from "outside the container"
 
 Please visit the http://localhost:8000 and Sign up a few times.
 
@@ -385,6 +422,14 @@ When executing the following command, we should be able to see our new DynamoDB 
 ```bash
 aws dynamodb scan --table-name gsg-signup-table --endpoint-url http://localhost:8001 --region "us-east-1" 
 ```
+
+Now we have seen how we can leverage the containers environment for development purposes. As already mentioned, this keeps our host system clean from any cluter and additional software that would need to be installed so that we can develop our application while also keeping everything necessary for the development enclosed in an environment that is portable and easy to reproduce.
+
+This is just simple case. [Here](https://github.com/janroker/sveprisutno/blob/master/Dockerfile) you can see a more complex real life example of a Dockerfile that contains instructions for creating a Docker image with the enviroment that is necessary for firmware development on ESP32 microcontroller by using a remote development with Docker containers.
+
+We could also automate some of the process described above by defining a Docker file and a docker-compose.yml file. We will do this later.
+
+Now stop the server and let's continue with the next task.
 
 ## Task 1.3 Containerizing the application
 
@@ -458,6 +503,349 @@ Please note the options that we have used:
 - `--network="host"` is another very important option. Since our server is trying to communicate with another container which is our local DynamoDB, we need to set its network to "host" so that `localhost` is the same thing on the host machine and inside the Docker container. Notice the local DynamoDB endpoint url: `DYNAMO_ENDPOINT_URL=http://localhost:8001`. If we did not set the network option to "host", `localhost` would mean as if the container is contacting himself.
 
 ## Task 1.4 - simplifying things by using the docker-compose
+
+Create a new empty Docker compose file with a default name - `/research/tutorial/task1/docker-compose.yml`. Docker compose tool searches for this file by default, that is why it is a "default name".
+
+Paste the following content in the new file:
+
+```docker-compose.yml
+version: '3.8'
+
+# Services that compose our application
+services:
+  # eb-signup application service
+  eb-signup:
+    networks: 
+      - eb-signup-network
+    # Exposed ports
+    ports:
+      - "8002:8000"
+    container_name: eb-signup
+    # Database has to be first to start
+    depends_on:
+      - eb-signup-db
+    # How to create an image
+    build:
+      # Application root folder
+      context: ./eb-signup
+      # Dockerfile name
+      dockerfile: Dockerfile
+    environment:
+      - DEBUG
+      - STARTUP_SIGNUP_TABLE
+      - AWS_REGION
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_SESSION_TOKEN
+      - EB_SIGNUP_ENVIRONMENT
+      - DYNAMO_ENDPOINT_URL=http://eb-signup-db:8000
+
+  # DynamoDB database service
+  eb-signup-db:
+    # Which image to use
+    image: 'amazon/dynamodb-local'
+    networks: 
+      - eb-signup-network
+    # Exposed ports
+    ports:
+      - "8001:8000"
+    container_name: eb-signup-db
+    # Append arguments to the entrypoint
+    command: -jar DynamoDBLocal.jar -sharedDb
+
+  # Python development container service
+  dev:
+    networks: 
+      - eb-signup-network
+    # Exposed ports
+    ports:
+      - "8000:8000"
+    container_name: eb-signup-dev
+    # Database has to be first to start
+    depends_on:
+      - eb-signup-db
+    image: python:3.11-slim-bullseye
+    working_dir: /work
+    entrypoint: /bin/sh
+    stdin_open: true # docker run -i
+    tty: true # docker run -t
+    volumes:
+      - ./eb-signup:/work
+    environment:
+      - DEBUG
+      - STARTUP_SIGNUP_TABLE
+      - AWS_REGION
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_SESSION_TOKEN
+      - EB_SIGNUP_ENVIRONMENT
+      - DYNAMO_ENDPOINT_URL=http://eb-signup-db:8000
+
+# Network definition for our services
+networks:
+  eb-signup-network:
+    name: eb-signup-network
+    driver: bridge
+```
+
+This file defines three services and one network. The services use the network to communicate with each other. For more info about the Docker network you can refer to the [docuentation](https://docs.docker.com/network/).
+
+We have defined three services:
+
+1. Application service - "production" environment of our application
+2. Database service
+3. Development service - "develop" environment of our application
+
+Both the 1st and 3rd service depend on the database service to be running before they can start. This is defined by the `depends_on:` instruction. Each of the services definition is an equivalent of the `docker run` commands that we have previously been using with a few modifications.
+
+The differences between `docker run` commands and service definition:
+
+1. Exposed ports have been modified so that both application service and development service can run at the same time.
+2. We have created a private network so that our containers can communicate between each other inside that network while previously they have been using the hosts network.
+3. We have defined dependencies between services.
+4. We are modifying the containers environment variables with the `environment:` clause instead of passing a .env file.
+5. We are modifying the `DYNAMO_ENDPOINT_URL` environment variable and setting it to `http://service-name:port_num` because that is how docker networking identifies containers that we want to communicate with.
+
+### docker-compose commands
+
+To run the commands please open a terminal and position yourself into the `research/tutorial/task1` folder. We will use the `.env` file that we created in one of the previous tasks to load environment variables and pass them to the containers. [Here](https://docs.docker.com/compose/environment-variables/set-environment-variables/) you will find more info about the .env files in docker-compose.
+
+Note: "docker-compose" is equivalent with "docker compose".
+
+If we run the docker-compose without any arguments, we will get a list of commands and their meaning:
+
+```bash
+docker-compose 
+
+Usage:  docker compose [OPTIONS] COMMAND
+
+Docker Compose
+
+Options:
+      --ansi string                Control when to print ANSI control characters ("never"|"always"|"auto") (default "auto")
+      --compatibility              Run compose in backward compatibility mode
+      --env-file stringArray       Specify an alternate environment file.
+  -f, --file stringArray           Compose configuration files
+      --parallel int               Control max parallelism, -1 for unlimited (default -1)
+      --profile stringArray        Specify a profile to enable
+      --project-directory string   Specify an alternate working directory
+                                   (default: the path of the, first specified, Compose file)
+  -p, --project-name string        Project name
+
+Commands:
+  build       Build or rebuild services
+  config      Parse, resolve and render compose file in canonical format
+  cp          Copy files/folders between a service container and the local filesystem
+  create      Creates containers for a service.
+  down        Stop and remove containers, networks
+  events      Receive real time events from containers.
+  exec        Execute a command in a running container.
+  images      List images used by the created containers
+  kill        Force stop service containers.
+  logs        View output from containers
+  ls          List running compose projects
+  pause       Pause services
+  port        Print the public port for a port binding.
+  ps          List containers
+  pull        Pull service images
+  push        Push service images
+  restart     Restart service containers
+  rm          Removes stopped service containers
+  run         Run a one-off command on a service.
+  start       Start services
+  stop        Stop services
+  top         Display the running processes
+  unpause     Unpause services
+  up          Create and start containers
+  version     Show the Docker Compose version information
+
+Run 'docker compose COMMAND --help' for more information on a command.
+```
+
+#### docker-compose config
+
+Displays parsed and resolved docker compose file. Placeholder variables - `${variable}` are replaced with variables from the environment - `.env`.
+
+```bash
+docker-compose --env-file ./eb-signup/.env config
+```
+
+output:
+
+```docker-compose.yml
+name: task1
+services:
+  dev:
+    container_name: eb-signup-dev
+    depends_on:
+      eb-signup-db:
+        condition: service_started
+    entrypoint:
+    - /bin/sh
+    environment:
+      AWS_ACCESS_KEY_ID: random
+      AWS_REGION: us-east-1
+      AWS_SECRET_ACCESS_KEY: random
+      AWS_SESSION_TOKEN: random
+      DEBUG: "True"
+      DYNAMO_ENDPOINT_URL: http://eb-signup-db:8000
+      EB_SIGNUP_ENVIRONMENT: dev
+      STARTUP_SIGNUP_TABLE: gsg-signup-table
+    image: python:3.11-slim-bullseye
+    networks:
+      eb-signup-network: null
+    ports:
+    - mode: ingress
+      target: 8000
+      published: "8000"
+      protocol: tcp
+    stdin_open: true
+    tty: true
+    volumes:
+    - type: bind
+      source: /home/janroker/Desktop/CCBDA/CCBDA-research/research/tutorial/task1/eb-signup
+      target: /work
+      bind:
+        create_host_path: true
+    working_dir: /work
+  eb-signup:
+    build:
+      context: /home/janroker/Desktop/CCBDA/CCBDA-research/research/tutorial/task1/eb-signup
+      dockerfile: Dockerfile
+    container_name: eb-signup
+    depends_on:
+      eb-signup-db:
+        condition: service_started
+    environment:
+      AWS_ACCESS_KEY_ID: random
+      AWS_REGION: us-east-1
+      AWS_SECRET_ACCESS_KEY: random
+      AWS_SESSION_TOKEN: random
+      DEBUG: "True"
+      DYNAMO_ENDPOINT_URL: http://eb-signup-db:8000
+      EB_SIGNUP_ENVIRONMENT: dev
+      STARTUP_SIGNUP_TABLE: gsg-signup-table
+    networks:
+      eb-signup-network: null
+    ports:
+    - mode: ingress
+      target: 8000
+      published: "8002"
+      protocol: tcp
+  eb-signup-db:
+    command:
+    - -jar
+    - DynamoDBLocal.jar
+    - -sharedDb
+    container_name: eb-signup-db
+    image: amazon/dynamodb-local
+    networks:
+      eb-signup-network: null
+    ports:
+    - mode: ingress
+      target: 8000
+      published: "8001"
+      protocol: tcp
+networks:
+  eb-signup-network:
+    name: eb-signup-network
+    driver: bridge
+```
+
+#### docker-compose up, stop, start, down
+
+We can use these commands to create and start our services (containers), just start them, just stop them, or stop them and remove them.
+
+If we use these commands **without specifying a service name** after the command, the tool will create/start/stop/remove all services it finds in the docker-compose.yml file.
+
+Create and start the containers in detached mode:
+
+```bash
+(base) [janroker@janroker task1]$ docker-compose --env-file ./eb-signup/.env up -d
+[+] Running 3/0
+ ✔ Container eb-signup-db   Running                                                                                                                                                                                                                                                                                                          0.0s 
+ ✔ Container eb-signup      Running                                                                                                                                                                                                                                                                                                          0.0s 
+ ✔ Container eb-signup-dev  Running    
+```
+
+Stop and remove the containers specified by the docker-compose.yml file in the working directory:
+
+```bash
+ docker compose down
+[+] Running 4/4
+ ✔ Container eb-signup-dev    Removed                                                                                                                                                                                                                                                                                                       10.5s 
+ ✔ Container eb-signup        Removed                                                                                                                                                                                                                                                                                                       10.4s 
+ ✔ Container eb-signup-db     Removed                                                                                                                                                                                                                                                                                                        0.6s 
+ ✔ Network eb-signup-network  Removed 
+```
+
+**Note**: If we remove containers, all **changes** made in the filesystem of the container **will be lost** except the data that resides in Docker volumes attached to the containers.
+
+---
+
+If we use these commands and **specify a service name** after the command, the tool will consider only the service specified and its dependencies. For example, we could use the following to start the development container only so that we can attach Visual Studio Code to it and modify our application as we have shown in the previous task.
+
+```bash
+(base) [janroker@janroker task1]$ docker-compose --env-file ./eb-signup/.env up -d dev
+[+] Running 3/3
+ ✔ Network eb-signup-network  Created                                                                                                                                                                                                                                                                                                        0.0s 
+ ✔ Container eb-signup-db     Started                                                                                                                                                                                                                                                                                                        0.5s 
+ ✔ Container eb-signup-dev    Started                                                                                                                                                                                                                                                                                                        0.8s 
+(base) [janroker@janroker task1]$ docker compose ps
+NAME                IMAGE                       COMMAND                  SERVICE             CREATED             STATUS              PORTS
+eb-signup-db        amazon/dynamodb-local       "java -jar DynamoDBL…"   eb-signup-db        13 seconds ago      Up 11 seconds       0.0.0.0:8001->8000/tcp, :::8001->8000/tcp
+eb-signup-dev       python:3.11-slim-bullseye   "/bin/sh"                dev                 13 seconds ago      Up 11 seconds       0.0.0.0:8000->8000/tcp, :::8000->8000/tcp
+(base) [janroker@janroker task1]$ docker compose ls
+NAME                STATUS              CONFIG FILES
+task1               running(2)          /home/janroker/Desktop/CCBDA/CCBDA-research/research/tutorial/task1/docker-compose.yml
+```
+
+As you can see, only the dev service and its dependencies (database service and network) were created.
+
+We can run `docker compose down` to stop and remove previously started serices:
+
+```bash
+(base) [janroker@janroker task1]$ docker compose down
+[+] Running 3/3
+ ✔ Container eb-signup-dev    Removed                                                                                                                                                                                                                                                                                                       10.2s 
+ ✔ Container eb-signup-db     Removed                                                                                                                                                                                                                                                                                                        0.6s 
+ ✔ Network eb-signup-network  Removed                                                                                                                                                                                                                                                                                                        0.1s 
+(base) [janroker@janroker task1]$ docker compose ps
+NAME                IMAGE               COMMAND             SERVICE             CREATED             STATUS              PORTS
+(base) [janroker@janroker task1]$
+```
+
+#### docker-compose logs
+
+To get the logs from the services we can run the `docker compose logs` command:
+
+```bash
+(base) [janroker@janroker task1]$ docker-compose --env-file ./eb-signup/.env up -d
+[+] Running 4/4
+ ✔ Network eb-signup-network  Created                                                                                                                                                                                                                                                                                                        0.0s 
+ ✔ Container eb-signup-db     Started                                                                                                                                                                                                                                                                                                        0.5s 
+ ✔ Container eb-signup        Started                                                                                                                                                                                                                                                                                                        0.9s 
+ ✔ Container eb-signup-dev    Started                                                                                                                                                                                                                                                                                                        0.9s 
+(base) [janroker@janroker task1]$ docker-compose logs
+eb-signup-db  | Initializing DynamoDB Local with the following configuration:
+eb-signup     | Watching for file changes with StatReloader
+eb-signup     | System check identified some issues:
+eb-signup     | 
+eb-signup     | WARNINGS:
+eb-signup-db  | Port:   8000
+eb-signup     | form.Leads: (models.W042) Auto-created primary key used when not defining a primary key type, by default 'django.db.models.AutoField'.
+eb-signup-db  | InMemory:       false
+eb-signup-db  | DbPath: null
+eb-signup-db  | SharedDb:       true
+eb-signup-db  | shouldDelayTransientStatuses:   false
+eb-signup-db  | CorsParams:     null
+eb-signup-db  | 
+eb-signup     |         HINT: Configure the DEFAULT_AUTO_FIELD setting or the FormConfig.default_auto_field attribute to point to a subclass of AutoField, e.g. 'django.db.models.BigAutoField'.
+eb-signup     | 
+eb-signup     | System check identified 1 issue (0 silenced).
+eb-signup     | "GET / HTTP/1.1" 200 7299
+(base) [janroker@janroker task1]$
+```
 
 ## How to run Kind
 
