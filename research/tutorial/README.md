@@ -1393,6 +1393,19 @@ metadata:
 
 ---
 
+We will also remove the hardcoded IP addresses from the `yaml` file. Remove all the occurences of
+```yaml
+  clusterIP: <ip>
+  clusterIPs:
+    - <ip>
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+```
+
+---
+
 We will now apply the `eb-signup.yaml` to our cluster and monitor the progress:
 
 ```bash
@@ -1409,7 +1422,7 @@ We should see 2 pods Running, 3 services and 2 configmaps
 To test the application, we need to:
 
 1. Expose the DB to the host machine by executing `kubectl port-forward services/eb-signup-db-service 8000:8000`
-2. Create the table by using the AWS CLI:
+2. Create the table by using the AWS CLI (in a different terminal):
 
 ```bash
 aws dynamodb create-table --endpoint-url http://localhost:8000 --region "us-east-1" \
