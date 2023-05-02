@@ -93,6 +93,25 @@ Some of the potential drawbacks include:
 
 Overall, Kubernetes is a powerful tool for managing containerized applications, and it is widely used in cloud computing and DevOps. However, organizations need to carefully consider the benefits and drawbacks of using Kubernetes before adopting it in their workflows.
 
+### General Kubernetes terminology
+
+Here are some common terms used in Kubernetes environment:
+
+1. **Pod**: A pod is the smallest deployable unit in Kubernetes. It is a logical host for one or more containers and provides a shared namespace for communication between them.
+2. **Node**: A node is a physical or virtual machine that is part of a Kubernetes cluster. Pods are scheduled onto nodes, and each node can run multiple pods.
+3. **Container**: A container is a lightweight, portable executable that encapsulates an application and its dependencies. Containers are typically deployed inside pods.
+4. **Deployment**: A deployment is a higher-level Kubernetes object that manages a set of replicas of a pod template. Deployments make it easy to scale, update, and rollback applications.
+5. **Scaling**: Scaling refers to the process of increasing or decreasing the number of replicas of a pod or deployment to meet changing demand. Kubernetes provides horizontal scaling, which means adding or removing pods rather than scaling up individual containers.
+6. **Service**: A service is an abstraction layer that provides a stable IP address and DNS name for a set of pods. Services allow pods to be accessed by other pods or external clients, regardless of their current IP addresses.
+7. **Load balancer**: A load balancer is a Kubernetes resource that distributes incoming network traffic across multiple pods. Load balancers are typically used to provide high availability and scalability for web applications.
+8. **Worker node**: A worker node is a node in a Kubernetes cluster that runs pods. Worker nodes are responsible for running the workload, and they communicate with the master node to receive instructions and report status.
+9. **Master node**: A master node is a node in a Kubernetes cluster that manages the overall state of the cluster. It is responsible for scheduling pods onto worker nodes, monitoring their status, and managing the cluster's resources.
+10. **Ingress**: Ingress is a Kubernetes resource that allows external traffic to be routed to services within the cluster. Ingress can provide features like SSL termination, URL rewriting, and load balancing for HTTP and HTTPS traffic.
+    
+[Here](https://kubernetes.io/docs/concepts/overview/components/) you can find out more about the Kubernetes Components.
+
+[Here](https://landscape.cncf.io/) you can see the CNCF Cloud Native Interactive Landscape which shows the different open-source projects and commercial products that make up the cloud native ecosystem. It provides a comprehensive overview of the cloud native landscape, including technologies related to containers, orchestration, networking, security, storage, monitoring, logging, and more, all commonly used with Kubernetes.
+
 ## Kind (Kubernetes in Docker)
 
 Kind (Kubernetes in Docker) is a tool for running _local Kubernetes clusters using Docker container nodes_. It allows users to **easily create, manage, and test Kubernetes clusters on their local machines** or in CI/CD pipelines.
@@ -104,6 +123,8 @@ A Kind cluster runs on a user's machine and can be used for a variety of purpose
 - Education and training: Kind can be used to create a local Kubernetes environment for educational and training purposes, allowing users to learn and experiment with Kubernetes without the need for cloud infrastructure.
 
 Kind provides a **lightweight and portable** way to create Kubernetes clusters, making it **easier for developers to experiment** with and test their applications **locally**. It can also be used in conjunction with other tools, such as kubectl and Helm, to streamline the development and deployment process.
+
+Check out this great [video](https://www.youtube.com/watch?v=m-IlbCgSzkc&ab_channel=ThatDevOpsGuy) that is an intro into Kind and its use cases.
 
 ## Prerequisites
 
@@ -283,6 +304,10 @@ We are now ready to modify the code, debug and test our modifications.
 #### Modify the code
 
 Before containerizing the application, we will modify the code because we want to be able to test the application without having to create a new dynamodb table on the AWS academy
+
+- Modify the `eb-signup/eb-django-express-signup/settings.py`:
+
+Add the **eb-signup-service** to the `ALLOWED_HOSTS = ['eb-signup-service','.elasticbeanstalk.com','localhost','127.0.0.1', hostname, local_ip]`.
 
 - Create `eb-signup/form/resources.py` with the following code:
 
@@ -477,7 +502,7 @@ We are now ready to build our Docker image. This command will build a new docker
 docker build -t eb-signup:1.0 .
 ```
 
-Create .env file in the project root with the following content. We will use this file to set the environment variables when starting the container.
+Create `.env` file in the project root with the following content. We will use this file to set the environment variables when starting the container.
 
 ```.env
 DEBUG=True
@@ -501,6 +526,8 @@ Please note the options that we have used:
 - `-p` maps containers port 8000 to the port 8000 on the host -> format is `host_port:container_port`. We are using this option to expose the server to the host.
 - `--env-file .env` specifies that the container environment should be set from the .env file.
 - `--network="host"` is another very important option. Since our server is trying to communicate with another container which is our local DynamoDB, we need to set its network to "host" so that `localhost` is the same thing on the host machine and inside the Docker container. Notice the local DynamoDB endpoint url: `DYNAMO_ENDPOINT_URL=http://localhost:8001`. If we did not set the network option to "host", `localhost` would mean as if the container is contacting himself.
+
+**Note**: For the application to work, you must have a running **DynamoDB database instance**. If you **stop** the database container, it will immediately **get removed** because we have used the `--rm` option. If you have stopped the container, you will have to execute the `docker run` command for starting the DynamoDB container again. Also, it will be necessary to **recreate the table** using the AWS CLI.
 
 ## Task 1.4 - simplifying things by using the docker-compose
 
@@ -847,10 +874,580 @@ eb-signup     | "GET / HTTP/1.1" 200 7299
 (base) [janroker@janroker task1]$
 ```
 
+**Note**: For the application to work, you must have a running **DynamoDB database instance**. If you have used the `docker compose down` command, you will have to **recreate the table** (by using the AWS CLI) because the data was lost by removing the container.
+
 ## How to run Kind
+
+Please follow the instalation to install [kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation) and [kubectl](https://kubernetes.io/docs/tasks/tools/) on your pc. Optionally, can also follow the rest of the Kind quick start guide to get familiar with Kind.
+
+Lets create our first cluster. Create a new file `/research/tutorial/task1/kind-cluster/config.yml` with the following content:
+
+```yaml
+# two node (one worker) cluster config
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+- role: worker
+
+```
+
+The file is a config file that we will pass as an argument to the kind create cluster command. It specifies that two node cluster should be created - one master and one worker.
+
+Execute the kind create cluster command:
+
+```bash
+(base) [janroker@janroker task1]$ kind create cluster --config=./kind-cluster/config.yml
+Creating cluster "kind" ...
+ ✓ Ensuring node image (kindest/node:v1.26.3) 🖼
+ ✓ Preparing nodes 📦 📦  
+ ✓ Writing configuration 📜 
+ ✓ Starting control-plane 🕹️ 
+ ✓ Installing CNI 🔌 
+ ✓ Installing StorageClass 💾 
+ ✓ Joining worker nodes 🚜 
+Set kubectl context to "kind-kind"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-kind
+
+Have a nice day! 👋
+```
+
+Lets check that `kubectl` is configured and that we have created a cluster with desired configuration.
+
+```bash
+(base) [janroker@janroker task1]$ kubectl get nodes
+NAME                 STATUS   ROLES           AGE     VERSION
+kind-control-plane   Ready    control-plane   4m17s   v1.26.3
+kind-worker          Ready    <none>          3m51s   v1.26.3
+(base) [janroker@janroker task1]$ docker ps
+CONTAINER ID   IMAGE                  COMMAND                  CREATED         STATUS         PORTS                       NAMES
+7f3d94da64d2   kindest/node:v1.26.3   "/usr/local/bin/entr…"   4 minutes ago   Up 4 minutes                               kind-worker
+327ae9c3bc00   kindest/node:v1.26.3   "/usr/local/bin/entr…"   4 minutes ago   Up 4 minutes   127.0.0.1:35041->6443/tcp   kind-control-plane
+```
+
+As we can see, everything went right. We have two nodes, each running as a separate Docker container.
 
 ## How to deploy application on Kind cluster
 
-## How to do deploy an application to AWS EKS
+To deploy an application on a Kubernetes cluster, we will need to follow these general steps:
 
-https://github.com/marcel-dempers/docker-development-youtube-series
+1. Create a Kubernetes deployment file: We will need to create a YAML file that defines the deployment of our application on Kubernetes. The deployment file should include details about the container image, the number of replicas, and other configuration details.
+2. Create a Kubernetes service file: A service file defines how the application can be accessed from within the Kubernetes cluster. It creates a stable IP address that is used to access the application, even if the underlying pods are scaled up or down.
+3. Apply the deployment and service files: We can apply the deployment and service files to our Kubernetes cluster using the kubectl apply command.
+4. Monitor the deployment: After applying the deployment and service files, we can monitor the status of our deployment using the kubectl get pods, kubectl get deployments, and kubectl get services commands.
+5. Update the deployment: If we need to update the application, we can update the deployment file and apply the changes using the kubectl apply command.
+
+After creating the deployment and service files, we have to apply them to our cluster:
+
+```bash
+kubectl apply -f webapp-deployment.yaml
+kubectl apply -f webapp-service.yaml
+```
+
+We can monitor the status of our deployment using these commands:
+
+```bash
+kubectl get pods
+kubectl get deployments
+kubectl get services
+```
+
+### Deploying our application
+
+Lets create a new `/research/tutorial/task1/kind-cluster/eb-signup.yaml` and file. It will be made of multiple Kubernetes manifests or multiple yaml documents separated by `---` in a single file. We could have also created multiple yaml document instead of putting everything in a single file, but this will keep all the information in a single place for a single application.
+
+Open a terminal and position yourself in the `/research/tutorial/task1` folder.
+
+Execute the command that will build the image for our application:
+
+```bash
+(base) [janroker@janroker task1]$ docker compose --env-file ./eb-signup/.env build eb-signup
+[+] Building 1.7s (10/10) FINISHED
+ => [internal] load build definition from Dockerfile
+ => => transferring dockerfile: 494B
+ => [internal] load .dockerignore
+ => => transferring context: 2B
+ => [internal] load metadata for docker.io/library/python:3.11-slim-bullseye
+ => [1/5] FROM docker.io/library/python:3.11-slim-bullseye
+ => [internal] load build context
+ => => transferring context: 1.20MB
+ => CACHED [2/5] RUN mkdir /app/
+ => CACHED [3/5] WORKDIR /app/
+ => CACHED [4/5] COPY . /app/
+ => CACHED [5/5] RUN pip install -r requirements.txt
+ => exporting to image
+ => => exporting layers
+ => => writing image sha256:ad3cc1bcfa57f07941ebd7a10dae3947d7c3696b26283ef16a1d28d08165f9f5
+ => => naming to docker.io/library/task1-eb-signup         
+```
+
+Load the image into our cluster (the name of the image is visible in the last line of the output of the prevoius command):
+
+```bash
+(base) [janroker@janroker task1]$ kind load docker-image task1-eb-signup
+Image: "task1-eb-signup" with ID "sha256:ad3cc1bcfa57f07941ebd7a10dae3947d7c3696b26283ef16a1d28d08165f9f5" not yet present on node "kind-worker", loading...
+Image: "task1-eb-signup" with ID "sha256:ad3cc1bcfa57f07941ebd7a10dae3947d7c3696b26283ef16a1d28d08165f9f5" not yet present on node "kind-control-plane", loading...
+```
+
+Next command will create a deployment specification for us:
+
+```bash
+kubectl create deployment eb-signup-deployment --image task1-eb-signup:latest --port 8000 --replicas 1 -o yaml
+```
+
+Paste the output into the `eb-signup.yaml` file. Insert a new line that contains three dashes `---`, at the end of the file.
+
+Append the `eb-signup.yaml` file with the output of the next command:
+
+```bash
+kubectl create service clusterip eb-signup-service --tcp 8000:8000 -o yaml
+```
+
+We need to modify the previous output. Replace the following content:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: eb-signup-deployment
+  name: eb-signup-deployment
+  namespace: default
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: eb-signup-deployment
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: eb-signup-deployment
+    spec:
+      containers:
+        - image: task1-eb-signup:latest
+          imagePullPolicy: IfNotPresent
+          name: task1-eb-signup
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          envFrom:
+            - configMapRef: #used to state the configmap you need.
+                name: eb-signup-deployment-configmap
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: eb-signup-service
+  name: eb-signup-service
+  namespace: default
+spec:
+  clusterIP: 10.96.114.165
+  clusterIPs:
+    - 10.96.114.165
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+    - name: 8000-8000
+      port: 8000
+      protocol: TCP
+      targetPort: 8000
+  selector:
+    app: eb-signup-deployment
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: eb-signup-db-deployment
+  name: eb-signup-db-deployment
+  namespace: default
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: eb-signup-db-deployment
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: eb-signup-db-deployment
+    spec:
+      containers:
+        - image: amazon/dynamodb-local
+          imagePullPolicy: IfNotPresent
+          name: dynamodb-local
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: eb-signup-db-service
+  name: eb-signup-db-service
+  namespace: default
+spec:
+  clusterIP: 10.96.217.38
+  clusterIPs:
+    - 10.96.217.38
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+    - name: 8000-8000
+      port: 8000
+      protocol: TCP
+      targetPort: 8000
+  selector:
+    app: eb-signup-db-deployment
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+---
+
+apiVersion: v1
+data:
+  AWS_ACCESS_KEY_ID: random
+  AWS_REGION: us-east-1
+  AWS_SECRET_ACCESS_KEY: random
+  AWS_SESSION_TOKEN: random
+  DEBUG: "True"
+  DYNAMO_ENDPOINT_URL: http://eb-signup-db-service:8000
+  EB_SIGNUP_ENVIRONMENT: dev
+  STARTUP_SIGNUP_TABLE: gsg-signup-table
+kind: ConfigMap
+metadata:
+  name: eb-signup-deployment-configmap
+  namespace: default
+
+```
+
+We modified this line because it needs to match the `metadata.labels.app` value from the deployment that we are targeting - `The set of Pods targeted by a Service is usually determined by a selector that you define.`. Please, refer to the [documentation](https://kubernetes.io/docs/concepts/services-networking/service/).
+
+To learn more about the Service types, please visit this [website](https://medium.com/google-cloud/kubernetes-nodeport-vs-loadbalancer-vs-ingress-when-should-i-use-what-922f010849e0). It visually and textually explains what services are for as well as the differences between types of services.
+
+Insert a new line that contains three dashes `---`, at the end of the file.
+
+---
+
+The next thing we need to do is add the deployment and service specification for our database. We will do it in a similar way as we did with the eb-signup application. Execute the following commands and append the output of the `kubectl` commands to the `eb-signup.yaml` file:
+
+```bash
+(base) [janroker@janroker task1]$ kind load docker-image amazon/dynamodb-local
+(base) [janroker@janroker task1]$ kubectl create deployment eb-signup-db-deployment --image amazon/dynamodb-local --port 8000 --replicas 1 -o yaml
+```
+
+**Note**: Don't forget to modify the service.
+
+---
+
+There are a few more modifications that we need to do. Our eb-signup application uses environment variables and we need a way to set them. We will use a [configMap](https://www.civo.com/learn/managing-environment-variables-on-kubernetes) for that purpose. 
+
+Please insert the following code in the `eb-signup-deployment` specification, under the `spec.template.spec.containers` path.
+
+```ỳaml
+containers:
+  - image
+  # ...
+    envFrom:
+      - configMapRef: #used to state the configmap you need.
+          name: eb-signup-deployment-configmap
+  # ...
+```
+
+Execute the following command to obtain the config map that contains the environment variables and paste the result at the end of the `eb-signup.yaml` file:
+
+```bash
+(base) [janroker@janroker task1]$ kubectl create configmap eb-signup-deployment-configmap --from-env-file=./eb-signup/.env -o yaml
+```
+
+Modify the `DYNAMODB_ENDPOINT_URL` with `http://eb-signup-db-service:8000`.
+
+Modify the DynamoDB Deployment by adding the `args:` value which is needed so that our database is started in a sharedDB mode:
+
+```yaml
+# ...
+spec:
+      containers:
+        - image: amazon/dynamodb-local
+          imagePullPolicy: IfNotPresent
+          args: ["-jar", "DynamoDBLocal.jar", "-sharedDb"]
+# ...
+```
+
+Modify the resulting file by removing all **creationTimestamp**, **resourceVersion**, **selfLink**, **generation** and **uid** fields. And change all `imagePullPolicy: Always` to `imagePullPolicy: IfNotPresent`.
+
+The resulting file should contain the following content:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: eb-signup-deployment
+  name: eb-signup-deployment
+  namespace: default
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: eb-signup-deployment
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: eb-signup-deployment
+    spec:
+      containers:
+        - image: task1-eb-signup:latest
+          imagePullPolicy: IfNotPresent
+          name: task1-eb-signup
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          envFrom:
+            - configMapRef: #used to state the configmap you need.
+                name: eb-signup-deployment-configmap
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: eb-signup-service
+  name: eb-signup-service
+  namespace: default
+spec:
+  clusterIP: 10.96.114.165
+  clusterIPs:
+    - 10.96.114.165
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+    - name: 8000-8000
+      port: 8000
+      protocol: TCP
+      targetPort: 8000
+  selector:
+    app: eb-signup-deployment
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: eb-signup-db-deployment
+  name: eb-signup-db-deployment
+  namespace: default
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: eb-signup-db-deployment
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: eb-signup-db-deployment
+    spec:
+      containers:
+        - image: amazon/dynamodb-local
+          imagePullPolicy: IfNotPresent
+          args: ["-jar", "DynamoDBLocal.jar", "-sharedDb"]
+          name: dynamodb-local
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: eb-signup-db-service
+  name: eb-signup-db-service
+  namespace: default
+spec:
+  clusterIP: 10.96.217.38
+  clusterIPs:
+    - 10.96.217.38
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+    - name: 8000-8000
+      port: 8000
+      protocol: TCP
+      targetPort: 8000
+  selector:
+    app: eb-signup-db-deployment
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+---
+
+apiVersion: v1
+data:
+  AWS_ACCESS_KEY_ID: random
+  AWS_REGION: us-east-1
+  AWS_SECRET_ACCESS_KEY: random
+  AWS_SESSION_TOKEN: random
+  DEBUG: "True"
+  DYNAMO_ENDPOINT_URL: http://eb-signup-db-service:8000
+  EB_SIGNUP_ENVIRONMENT: dev
+  STARTUP_SIGNUP_TABLE: gsg-signup-table
+kind: ConfigMap
+metadata:
+  name: eb-signup-deployment-configmap
+  namespace: default
+
+```
+
+---
+
+We will now apply the `eb-signup.yaml` to our cluster and monitor the progress:
+
+```bash
+(base) [janroker@janroker task1]$ kubectl apply -f ./kind-cluster/eb-signup.yaml 
+(base) [janroker@janroker task1]$ kubectl get pods
+(base) [janroker@janroker task1]$ kubectl get services
+(base) [janroker@janroker task1]$ kubectl get configmaps
+```
+
+We should see 2 pods Running, 3 services and 2 configmaps
+
+---
+
+To test the application, we need to:
+
+1. Expose the DB to the host machine by executing `kubectl port-forward services/eb-signup-db-service 8000:8000`
+2. Create the table by using the AWS CLI:
+
+```bash
+aws dynamodb create-table --endpoint-url http://localhost:8000 --region "us-east-1" \
+    --table-name gsg-signup-table \
+    --attribute-definitions \
+        AttributeName=email,AttributeType=S \
+    --key-schema \
+        AttributeName=email,KeyType=HASH \
+    --provisioned-throughput \
+        ReadCapacityUnits=5,WriteCapacityUnits=5 \
+    --table-class STANDARD
+```
+
+3. Stop exposing the DB by clicking on Ctrl+C and expose the application by executing `kubectl port-forward services/eb-signup-service 8000:8000`.
+4. The application should now be accessible on the localhost:8000
+
+---
+
+For more info you can refer to the official Kubernetes documentation:
+
+- [writing a deployment specification](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#writing-a-deployment-spec)
+- [deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
+- [service](https://kubernetes.io/docs/concepts/services-networking/service/)
+
+## Additional resources
+
+Check out this great [Introduction to Amazon EKS Kubernetes for beginners](https://www.youtube.com/watch?v=QThadS3Soig&list=PLHq1uqvAteVsUhzNBkn-rPzXtPNpJu1-k&index=4&ab_channel=ThatDevOpsGuy).
+
+Check out this great [Kubernetes development for beginers](https://www.youtube.com/watch?v=8h4FoWK7tIA&list=PLHq1uqvAteVvUEdqaBeMK2awVThNujwMd&ab_channel=ThatDevOpsGuy) playlist.
+
+## References
+
+[That Devops Guy Youtube channel](https://www.youtube.com/@MarcelDempers)
+
+[That Devops Guy github](https://github.com/marcel-dempers/docker-development-youtube-series)
+
+[Docker documentation](https://docs.docker.com/)
+
+[Docker curriculum](https://docker-curriculum.com/#hello-world)
+
+[Kind documentation](https://kind.sigs.k8s.io/docs/)
+
+[Kubernetes documentation](https://kubernetes.io/docs/home/)
