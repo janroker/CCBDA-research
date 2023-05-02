@@ -110,7 +110,7 @@ Here are some common terms used in Kubernetes environment:
     
 [Here](https://kubernetes.io/docs/concepts/overview/components/) you can find out more about the Kubernetes Components.
 
-[Here](https://landscape.cncf.io/) you can see the CNCF Cloud Native Interactive Landscape which shows the different open-source projects and commercial products that make up the cloud native ecosystem. It provides a comprehensive overview of the cloud native landscape, including technologies related to containers, orchestration, networking, security, storage, monitoring, logging, and more, all commonly used with Kubernetes.
+[Here](https://landscape.cncf.io/) you can see the CNCF (Cloud Native Interactive Landscape) which shows the different open-source projects and commercial products that make up the cloud native ecosystem. It provides a comprehensive overview of the cloud native landscape, including technologies related to containers, orchestration, networking, security, storage, monitoring, logging, and more, all commonly used with Kubernetes.
 
 ## Kind (Kubernetes in Docker)
 
@@ -143,7 +143,7 @@ This message shows that your installation appears to be working correctly.
 Confirm that the docker-compose was installed alongside the Docker Engine by running the following:
 
 ```bash
-$ docker compose version
+$ docker-compose --version
 Docker Compose version vN.N.N
 ```
 
@@ -157,7 +157,7 @@ In this section we will leverage container's self-suficiency to show why it can 
 
 ### Problem
 
-Application development process requires tools and environments that are able to build a runnable, debug an application and run it. For example, to develop and run a Java application you need JDK installed at least. This implies having a **right version** of JDK installed, having all the **environment** variables **correctly set-up** so that you can execute java commands, etc.
+Application development process requires tools and environments that are able to build an executable, debug an application and run it. For example, to develop and run a Java application you need JDK installed at least. This implies having a **right version** of JDK installed, having all the **environment** variables **correctly set-up** so that you can execute java commands, etc.
 
 What happens when you need multiple versions of environments to manage because you are maintaining multiple different applications at the same time? (I know, Java is not the best example here because it is hugely backwards compatible. There a lot of different tools that are not backwards compatible and you can't use same tooling to develop different applications.)
 
@@ -191,7 +191,7 @@ Here we will use the [bind mount](https://docs.docker.com/storage/bind-mounts/) 
 To see Docker volumes in action, we open a terminal window, position ourselves in the project's directory (working directory should be this repository's root) and execute the following command:
 
 ```bash
-docker run --rm -it -v .:/work -w /work alpine:3.9 /bin/sh
+docker run --rm -it -v $PWD:/work -w /work alpine:3.9 /bin/sh
 ```
 
 This command can be read as:
@@ -277,7 +277,7 @@ We need to install the `Remote Development` extension pack for vscode. Open the 
 Open a terminal window, position yourself inside the `research/tutorial/task1` folder and execute the following command:
 
 ```bash
-docker run -dt --network="host" -v ./eb-signup:/work -w /work python:3.11-slim-bullseye /bin/sh
+docker run -dt --network="host" -v $PWD/eb-signup:/work -w /work python:3.11-slim-bullseye /bin/sh
 ```
 
 Note: We have also used `-d` option so that our container is started in detached mode.
@@ -502,7 +502,7 @@ We are now ready to build our Docker image. This command will build a new docker
 docker build -t eb-signup:1.0 .
 ```
 
-Create `.env` file in the project root with the following content. We will use this file to set the environment variables when starting the container.
+Create `.env` file in the `eb-signup` directory with the following content. We will use this file to set the environment variables when starting the container.
 
 ```.env
 DEBUG=True
@@ -875,6 +875,8 @@ eb-signup     | "GET / HTTP/1.1" 200 7299
 ```
 
 **Note**: For the application to work, you must have a running **DynamoDB database instance**. If you have used the `docker compose down` command, you will have to **recreate the table** (by using the AWS CLI) because the data was lost by removing the container.
+
+**Note**: If you want to test the app at this stage, don't forget it's running on **port 8002**, as configured in the `docker-compose.yaml`.
 
 ## How to run Kind
 
