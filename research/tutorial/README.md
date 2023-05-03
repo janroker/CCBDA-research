@@ -1226,6 +1226,19 @@ spec:
 
 Modify the resulting file by removing all **creationTimestamp**, **resourceVersion**, **selfLink**, **generation** and **uid** fields. And change all `imagePullPolicy: Always` to `imagePullPolicy: IfNotPresent`.
 
+
+We will also remove the hardcoded IP addresses from the `yaml` file. Remove all the occurences of
+
+```yaml
+  clusterIP: <ip>
+  clusterIPs:
+    - <ip>
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+```
+
 The resulting file should contain the following content:
 
 ```yaml
@@ -1282,13 +1295,6 @@ metadata:
   name: eb-signup-service
   namespace: default
 spec:
-  clusterIP: 10.96.114.165
-  clusterIPs:
-    - 10.96.114.165
-  internalTrafficPolicy: Cluster
-  ipFamilies:
-    - IPv4
-  ipFamilyPolicy: SingleStack
   ports:
     - name: 8000-8000
       port: 8000
@@ -1353,13 +1359,6 @@ metadata:
   name: eb-signup-db-service
   namespace: default
 spec:
-  clusterIP: 10.96.217.38
-  clusterIPs:
-    - 10.96.217.38
-  internalTrafficPolicy: Cluster
-  ipFamilies:
-    - IPv4
-  ipFamilyPolicy: SingleStack
   ports:
     - name: 8000-8000
       port: 8000
@@ -1389,19 +1388,6 @@ metadata:
   name: eb-signup-deployment-configmap
   namespace: default
 
-```
-
----
-
-We will also remove the hardcoded IP addresses from the `yaml` file. Remove all the occurences of
-```yaml
-  clusterIP: <ip>
-  clusterIPs:
-    - <ip>
-  internalTrafficPolicy: Cluster
-  ipFamilies:
-    - IPv4
-  ipFamilyPolicy: SingleStack
 ```
 
 ---
